@@ -15,7 +15,10 @@ public class Question {
 	private String question;
 	private String answer;
 	
-	public Question(String question) {
+	
+	
+	public Question(int id, String question) {
+		this.id = id;
 		this.question = question;
 	}
 

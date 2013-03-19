@@ -89,16 +89,12 @@ public class MainActivity extends Activity implements
 		}
 	}
 
-	
-
 	private void onSendButtonClicked() {
-		String question = questionText.getText().toString();
-		int id = service.enqueQuestion(question);
+		String questionString = questionText.getText().toString();
+		int id = service.enqueQuestion(questionString);
 
-		Question q = new Question(question);
-		q.setId(id);
-
-		adapter.addQuestion(q);
+		Question question = new Question(id, questionString);
+		adapter.addQuestion(question);
 	}
 
 	@Override
@@ -107,7 +103,7 @@ public class MainActivity extends Activity implements
 			Crouton.showText(this, "Соединение восстановлено", Style.INFO);
 			service.connect();
 		} else {
-			Crouton.showText(this, "Соединение потеряно", Style.INFO);
+			Crouton.showText(this, "Соединение потеряно", Style.ALERT);
 		}
 	}
 
@@ -121,11 +117,11 @@ public class MainActivity extends Activity implements
 	}
 
 	@Override
-	public void onResultReceived(int id, String response) {
-		Question q = adapter.byId(id);
+	public void onResultReceived(int id, String answer) {
+		Question question = adapter.byId(id);
 		
-		if (q != null) {
-			q.setAnswer(response);
+		if (question != null) {
+			question.setAnswer(answer);
 
 			runOnUiThread(new Runnable() {
 
