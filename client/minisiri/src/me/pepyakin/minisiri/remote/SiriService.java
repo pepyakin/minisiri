@@ -4,6 +4,7 @@
 package me.pepyakin.minisiri.remote;
 
 import java.net.URI;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import android.util.Log;
 import android.util.SparseArray;
@@ -19,6 +20,7 @@ import com.codebutler.android_websockets.WebSocketClient;
 public class SiriService {
 
 	private SparseArray<SiriRequest> pendingRequests;
+	private ArrayBlockingQueue<SiriRequest> requestQueue;
 
 	private RequestEncoder encoder;
 	private ResponseDecoder decoder;
@@ -26,10 +28,15 @@ public class SiriService {
 	private WebSocketClient wsClient;
 	private SiriServiceCallbacks callbacks;
 	
+	private Thread pollerThread;
+	
 	private URI serverUri;
+	
+	private boolean inErrorState = false;
 	
 	public SiriService(URI serverUri) {
 		pendingRequests = new SparseArray<SiriRequest>();
+		requestQueue = new ArrayBlockingQueue<SiriRequest>(10);
 		
 		encoder = new RequestEncoder();
 		decoder = new ResponseDecoder();
@@ -38,12 +45,19 @@ public class SiriService {
 	}
 	
 	public void connect() {
+		inErrorState = false;
+		
 		wsClient = new WebSocketClient(serverUri, new Handler(), null);
 		wsClient.connect();
 		
 		for (int i = 0; i < pendingRequests.size(); i++) {
 			SiriRequest r = pendingRequests.valueAt(i);
-			send(r);
+			
+			try {
+				requestQueue.put(r);
+			} catch (InterruptedException e) {
+				// TODO: swallow for now
+			}
 		}
 	}
 
@@ -54,12 +68,20 @@ public class SiriService {
 	 */
 	public void enqueRequest(SiriRequest request) {
 		pendingRequests.put(request.getId(), request);
-		send(request);
+		
+		try {
+			requestQueue.put(request);
+		} catch (InterruptedException e) {
+			return;
+		}
 	}
 
 	private void send(SiriRequest request) {
 		String encodedRequest = encoder.encode(request);
-		wsClient.send(encodedRequest);
+		
+		if (!inErrorState) {
+			wsClient.send(encodedRequest);
+		}
 	}
 
 	void handleIncomingMessage(String messageData) {
@@ -69,6 +91,14 @@ public class SiriService {
 
 		if (callbacks != null) {
 			callbacks.onResultReceived(response);
+		}
+	}
+	
+	public void handleError(Exception exception) {
+		inErrorState = true;
+		
+		if (callbacks != null) {
+			callbacks.onError(exception);
 		}
 	}
 
@@ -82,7 +112,32 @@ public class SiriService {
 
 	public interface SiriServiceCallbacks {
 		void onResultReceived(SiriResponse response);
-		void onError();
+		void onError(Exception exception);
+	}
+	
+	class Poller implements Runnable {
+
+		private static final String TAG = "Poller";
+
+		@Override
+		public void run() {
+			Thread currentThread = Thread.currentThread();
+			
+			while (!currentThread.isInterrupted()) {
+				try {
+					SiriRequest r = requestQueue.take();
+					if (currentThread.isInterrupted()) {
+						Log.d(TAG, "currentThread " + currentThread + " interrupted");
+						break;
+					}
+					
+					send(r);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		}
+		
 	}
 
 	/**
@@ -98,6 +153,9 @@ public class SiriService {
 		@Override
 	    public void onConnect() {
 	        Log.d(TAG, "Connected!");
+	        
+	        pollerThread = new Thread(new Poller());
+	        pollerThread.start();
 	    }
 
 	    @Override
@@ -118,7 +176,16 @@ public class SiriService {
 	    @Override
 	    public void onError(Exception error) {
 	        Log.e(TAG, "Error!", error);
+	        
+	        if (pollerThread != null) {
+	        	pollerThread.interrupt();
+	        	pollerThread = null;
+	        }
+	        
+	        handleError(error);
 	    }
 	}
+
+
 
 }

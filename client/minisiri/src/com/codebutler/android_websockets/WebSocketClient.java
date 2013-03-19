@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -204,9 +205,15 @@ public class WebSocketClient {
     }
 
     void sendFrame(final byte[] frame) {
+    	final RuntimeException stackTrace = new RuntimeException();
+    	
         mHandler.post(new Runnable() {
             @Override
             public void run() {
+            	Log.d(TAG, "mSendLock=" + mSendLock);
+            	Log.d(TAG, "mSocket=" + mSocket);
+            	Log.d(TAG, "created", stackTrace);
+            	
                 try {
                     synchronized (mSendLock) {
                         OutputStream outputStream = mSocket.getOutputStream();
