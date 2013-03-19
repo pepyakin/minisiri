@@ -40,6 +40,11 @@ public class SiriService {
 	public void connect() {
 		wsClient = new WebSocketClient(serverUri, new Handler(), null);
 		wsClient.connect();
+		
+		for (int i = 0; i < pendingRequests.size(); i++) {
+			SiriRequest r = pendingRequests.valueAt(i);
+			send(r);
+		}
 	}
 
 	/**
@@ -47,9 +52,12 @@ public class SiriService {
 	 * 
 	 * @param request Сообщение для постановки в очередь.
 	 */
-	public void send(SiriRequest request) {
+	public void enqueRequest(SiriRequest request) {
 		pendingRequests.put(request.getId(), request);
+		send(request);
+	}
 
+	private void send(SiriRequest request) {
 		String encodedRequest = encoder.encode(request);
 		wsClient.send(encodedRequest);
 	}

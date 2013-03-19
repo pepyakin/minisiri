@@ -8,9 +8,14 @@ import me.pepyakin.minisiri.remote.SiriRequest;
 import me.pepyakin.minisiri.remote.SiriResponse;
 import me.pepyakin.minisiri.remote.SiriService;
 import me.pepyakin.minisiri.remote.SiriService.SiriServiceCallbacks;
-import android.os.Bundle;
 import android.app.Activity;
-import android.view.Menu;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,6 +30,8 @@ public class MainActivity extends Activity {
 	
 	private MessagesAdapter adapter;
 	
+	private ConnectivityListener connectivityListener;
+	
 	private Listener listener = new Listener();
 
     @Override
@@ -34,7 +41,24 @@ public class MainActivity extends Activity {
         
         resolveUi();
         serviceConnect();
+        
+        connectivityListener = new ConnectivityListener((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE));
+        
     }
+    
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	
+    	unregisterReceiver(connectivityListener);
+    }
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		
+		registerReceiver(connectivityListener, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+	}
 
 	private void resolveUi() {
 		Button sendButton = (Button) findViewById(R.id.send_button);
@@ -74,12 +98,18 @@ public class MainActivity extends Activity {
 		SiriRequest r = new SiriRequest();
 		r.setId(id);
 		r.setQuestion(question);
-		service.send(r);
+		service.enqueRequest(r);
 		
 		Question q = new Question(question);
 		q.setId(id);
 		
 		adapter.addQuestion(q);
+	}
+	
+	public void onNetworkAvailableChange(boolean networkAvailableNow) {
+		if (networkAvailableNow) {
+			service.connect();
+		}
 	}
 	
 	private class Listener implements View.OnClickListener, SiriServiceCallbacks {
@@ -112,5 +142,35 @@ public class MainActivity extends Activity {
 			
 		}
 		
+	}
+	
+	private class ConnectivityListener extends BroadcastReceiver {
+
+		private ConnectivityManager connectivityManager;
+		private boolean lastNetworkAvailable;
+		
+		
+
+		public ConnectivityListener(ConnectivityManager connectivityManager) {
+			this.connectivityManager = connectivityManager;
+			this.lastNetworkAvailable = isNetworkAvailable(connectivityManager);
+		}
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (!ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
+				return;
+			}
+			
+			boolean networkAvailable = isNetworkAvailable(connectivityManager); 
+			onNetworkAvailableChange(networkAvailable);
+		}
+
+		private boolean isNetworkAvailable(ConnectivityManager connectivityManager) {
+			NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+			
+			boolean networkAvailable = (activeNetwork != null) && (activeNetwork.isConnected());
+			return networkAvailable;
+		}
 	}
 }
