@@ -4,7 +4,6 @@
 package me.pepyakin.minisiri.remote;
 
 import java.net.URI;
-import java.net.URL;
 
 import android.util.Log;
 import android.util.SparseArray;
@@ -68,6 +67,10 @@ public class SiriService {
 	private void markAsCompleted(int id) {
 		pendingRequests.delete(id);
 	}
+	
+	public void setCallbacks(SiriServiceCallbacks callbacks) {
+		this.callbacks = callbacks;
+	}
 
 	public interface SiriServiceCallbacks {
 		void onResultReceived(SiriResponse response);
@@ -91,7 +94,7 @@ public class SiriService {
 
 	    @Override
 	    public void onMessage(String message) {
-	        Log.d(TAG, String.format("Got string message! %s", message));
+	        handleIncomingMessage(message);
 	    }
 
 	    @Override

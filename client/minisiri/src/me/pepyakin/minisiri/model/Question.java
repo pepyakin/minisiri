@@ -42,4 +42,8 @@ public class Question {
 	public void setId(int id) {
 		this.id = id;
 	}
+	
+	public boolean isPending() {
+		return answer == null;
+	}
 }

@@ -3,8 +3,11 @@ package me.pepyakin.minisiri;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import me.pepyakin.minisiri.model.Question;
 import me.pepyakin.minisiri.remote.SiriRequest;
+import me.pepyakin.minisiri.remote.SiriResponse;
 import me.pepyakin.minisiri.remote.SiriService;
+import me.pepyakin.minisiri.remote.SiriService.SiriServiceCallbacks;
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.Menu;
@@ -19,6 +22,8 @@ public class MainActivity extends Activity {
 	private ListView messageList;
 	
 	private SiriService service;
+	
+	private MessagesAdapter adapter;
 	
 	private Listener listener = new Listener();
 
@@ -37,12 +42,17 @@ public class MainActivity extends Activity {
         
         questionText = (EditText) findViewById(R.id.question_text);
         messageList = (ListView) findViewById(R.id.message_list);
+        
+        adapter = new MessagesAdapter(getLayoutInflater());
+        messageList.setAdapter(adapter);
 	}
 
 	private void serviceConnect() {
 		URI serverUri = specialMethodForWrappingDumbExceptions();
         
 		service = new SiriService(serverUri);
+		service.setCallbacks(listener);
+		
 		service.connect();
 	}
 
@@ -58,20 +68,48 @@ public class MainActivity extends Activity {
 	int idFactory = 0;
 	
 	private void onSendButtonClicked() {
-		SiriRequest r = new SiriRequest();
-		r.setId(idFactory++);
-		r.setQuestion(questionText.getText().toString());
+		String question = questionText.getText().toString();
+		int id = idFactory++;
 		
+		SiriRequest r = new SiriRequest();
+		r.setId(id);
+		r.setQuestion(question);
 		service.send(r);
+		
+		Question q = new Question(question);
+		q.setId(id);
+		
+		adapter.addQuestion(q);
 	}
 	
-	private class Listener implements View.OnClickListener {
+	private class Listener implements View.OnClickListener, SiriServiceCallbacks {
 
 		@Override
 		public void onClick(View v) {
 			if (v.getId() == R.id.send_button) {
 				onSendButtonClicked();
 			}
+		}
+
+		@Override
+		public void onResultReceived(SiriResponse response) {
+			Question q = adapter.byId(response.getId());
+			
+			q.setAnswer(response.getAnswer());
+			
+			runOnUiThread(new Runnable() {
+				
+				@Override
+				public void run() {
+					adapter.notifyDataSetChanged();
+				}
+			});
+		}
+
+		@Override
+		public void onError() {
+			// TODO Auto-generated method stub
+			
 		}
 		
 	}
