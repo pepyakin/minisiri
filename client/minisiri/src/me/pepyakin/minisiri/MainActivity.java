@@ -1,11 +1,11 @@
 package me.pepyakin.minisiri;
 
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import me.pepyakin.minisiri.ConnectivityListener.OnNetworkStateChangeListener;
 import me.pepyakin.minisiri.model.Question;
-import me.pepyakin.minisiri.remote.SiriResponse;
 import me.pepyakin.minisiri.remote.SiriService;
 import me.pepyakin.minisiri.remote.SiriService.SiriServiceCallbacks;
 import android.app.Activity;
@@ -121,10 +121,10 @@ public class MainActivity extends Activity implements
 	}
 
 	@Override
-	public void onResultReceived(SiriResponse response) {
-		Question q = adapter.byId(response.getId());
+	public void onResultReceived(int id, String response) {
+		Question q = adapter.byId(id);
 
-		q.setAnswer(response.getAnswer());
+		q.setAnswer(response);
 
 		runOnUiThread(new Runnable() {
 
@@ -137,8 +137,30 @@ public class MainActivity extends Activity implements
 
 	@Override
 	public void onError(Exception exception) {
-		// TODO Auto-generated method stub
-		
+		try {
+			// Импровезированный pattern-matching.
+			throw exception;
+		} catch (ConnectException e) {
+			onConnectFailed();
+		} catch (Exception e) {
+			onGenericException(e.getMessage());
+		}
+	}
+
+	private void onGenericException(String msg) {
+		Crouton.showText(this, "Что-то пошло не так: " + msg, Style.ALERT);
+	}
+
+	private void onConnectFailed() {
+		Crouton crouton = Crouton.makeText(this, "Ошибка подключения. Попробовать снова?", Style.ALERT);
+		crouton.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				service.connect();
+			}
+		});
+		crouton.show();
 	}
 
 }

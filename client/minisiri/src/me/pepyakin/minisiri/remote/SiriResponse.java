@@ -7,7 +7,7 @@ package me.pepyakin.minisiri.remote;
  * @author knott
  * 
  */
-public class SiriResponse {
+class SiriResponse {
 
 	private int id;
 	private String answer;
