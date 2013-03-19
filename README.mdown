@@ -1,0 +1,49 @@
+Wheely: Android Test Project
+===============================
+You will write an Android miniapp where the user chats with an AI. The AI is implemented on the server, however it is not clever so it replies only gibberish. 
+
+
+Running the server
+===================
+Pre-requisites: Ruby 1.9, rubygems. You can install Ruby using rvm:
+
+		$ \curl -L https://get.rvm.io | bash -s stable --ruby=1.9.3
+
+Install Bundler
+
+		gem install bundler
+
+Install depedencies
+
+		cd server
+		bundle install
+  
+Run the server
+  		
+  		bundle exec ruby minisiri.rb
+  		
+Playing with the protocol
+====================
+Open http://www.websocket.org/echo.html in a modern browser, connect  to ws://localhost:8080 and send the only message in our protocol:
+
+		["siri.ask","32423423",{"question":"hello?"}]
+
+You should get a reply like:
+		
+		["result","32423423",{"answer":"Avoid the spirit had finished speaking and perdition."}]
+		
+The protocol we looks like this:
+
+		[message_name, random_id, payload]
+
+Requirements
+==============
+-	You can use 3rd parties websocket clients, but they should support wss
+-	You should have some kind of reachability support (reconnect automatically to the server after the internet connection starts working again)
+-	If the internet connection is offline, queue the messages and send them once you are reconnected
+-	Display which messages have been sent, and which ones are pending. You can use the random_id to correlate requests and responses
+
+
+What to do next
+================
+Fork the repo and place your sourcecode in the client directory
