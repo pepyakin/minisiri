@@ -97,7 +97,9 @@ public class MessagesAdapter extends BaseAdapter {
 	}
 
 	public void addQuestion(Question q) {
-		questions.add(q);
+		final int FIRST = 0;
+		
+		questions.add(FIRST, q);
 		notifyDataSetChanged();
 	}
 
