@@ -3,12 +3,8 @@ package me.pepyakin.minisiri;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import de.keyboardsurfer.android.widget.crouton.Crouton;
-import de.keyboardsurfer.android.widget.crouton.Style;
-
 import me.pepyakin.minisiri.ConnectivityListener.OnNetworkStateChangeListener;
 import me.pepyakin.minisiri.model.Question;
-import me.pepyakin.minisiri.remote.SiriRequest;
 import me.pepyakin.minisiri.remote.SiriResponse;
 import me.pepyakin.minisiri.remote.SiriService;
 import me.pepyakin.minisiri.remote.SiriService.SiriServiceCallbacks;
@@ -17,12 +13,15 @@ import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+import de.keyboardsurfer.android.widget.crouton.Style;
 
 public class MainActivity extends Activity implements
-		OnNetworkStateChangeListener {
+		OnNetworkStateChangeListener, SiriServiceCallbacks, OnClickListener {
 
 	private EditText questionText;
 	private ListView messageList;
@@ -33,8 +32,6 @@ public class MainActivity extends Activity implements
 
 	private ConnectivityListener connectivityListener;
 
-	private Listener listener = new Listener();
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -42,7 +39,10 @@ public class MainActivity extends Activity implements
 
 		resolveUi();
 		serviceConnect();
+		setupConnectivityListener();
+	}
 
+	private void setupConnectivityListener() {
 		connectivityListener = new ConnectivityListener();
 		connectivityListener.setOnNetworkStateChangeListener(this);
 	}
@@ -64,7 +64,7 @@ public class MainActivity extends Activity implements
 
 	private void resolveUi() {
 		Button sendButton = (Button) findViewById(R.id.send_button);
-		sendButton.setOnClickListener(listener);
+		sendButton.setOnClickListener(this);
 
 		questionText = (EditText) findViewById(R.id.question_text);
 		messageList = (ListView) findViewById(R.id.message_list);
@@ -77,7 +77,7 @@ public class MainActivity extends Activity implements
 		URI serverUri = specialMethodForWrappingDumbExceptions();
 
 		service = new SiriService(serverUri);
-		service.setCallbacks(listener);
+		service.setCallbacks(this);
 	}
 
 	private URI specialMethodForWrappingDumbExceptions() {
@@ -89,16 +89,11 @@ public class MainActivity extends Activity implements
 		}
 	}
 
-	int idFactory = 0;
+	
 
 	private void onSendButtonClicked() {
 		String question = questionText.getText().toString();
-		int id = idFactory++;
-
-		SiriRequest r = new SiriRequest();
-		r.setId(id);
-		r.setQuestion(question);
-		service.enqueRequest(r);
+		int id = service.enqueQuestion(question);
 
 		Question q = new Question(question);
 		q.setId(id);
@@ -116,43 +111,34 @@ public class MainActivity extends Activity implements
 		}
 	}
 
-	private class Listener implements View.OnClickListener,
-			SiriServiceCallbacks {
-
-		@Override
-		public void onClick(View v) {
-			if (v.getId() == R.id.send_button) {
-				onSendButtonClicked();
-			} else {
-				// crouton
-				
-				service.connect();
-			}
-		}
-
-		@Override
-		public void onResultReceived(SiriResponse response) {
-			Question q = adapter.byId(response.getId());
-
-			q.setAnswer(response.getAnswer());
-
-			runOnUiThread(new Runnable() {
-
-				@Override
-				public void run() {
-					adapter.notifyDataSetChanged();
-				}
-			});
-		}
-
-		@Override
-		public void onError(Exception exception) {
-			Crouton crouton = Crouton.makeText(MainActivity.this, "Произошла ошибка, нажмите для переподключения", Style.ALERT);
-			crouton.setOnClickListener(this);
-			
-			crouton.show();
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.send_button:
+			onSendButtonClicked();
+			break;
 		}
 	}
 
-	
+	@Override
+	public void onResultReceived(SiriResponse response) {
+		Question q = adapter.byId(response.getId());
+
+		q.setAnswer(response.getAnswer());
+
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				adapter.notifyDataSetChanged();
+			}
+		});
+	}
+
+	@Override
+	public void onError(Exception exception) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

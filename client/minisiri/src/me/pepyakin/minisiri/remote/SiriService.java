@@ -32,6 +32,8 @@ public class SiriService {
 	
 	private URI serverUri;
 	
+	private IdFactory idFactory;
+	
 	private boolean inErrorState = false;
 	
 	public SiriService(URI serverUri) {
@@ -46,6 +48,7 @@ public class SiriService {
 	
 	public void connect() {
 		inErrorState = false;
+		requestQueue.clear();
 		
 		wsClient = new WebSocketClient(serverUri, new Handler(), null);
 		wsClient.connect();
@@ -59,6 +62,16 @@ public class SiriService {
 				// TODO: swallow for now
 			}
 		}
+	}
+	
+	public int enqueQuestion(String question) {
+		int id = idFactory.nextId();
+		
+		SiriRequest request = new SiriRequest();
+		request.setId(id);
+		request.setQuestion(question);
+		
+		return id;
 	}
 
 	/**
