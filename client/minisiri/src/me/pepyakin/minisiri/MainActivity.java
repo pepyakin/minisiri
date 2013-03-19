@@ -123,16 +123,18 @@ public class MainActivity extends Activity implements
 	@Override
 	public void onResultReceived(int id, String response) {
 		Question q = adapter.byId(id);
+		
+		if (q != null) {
+			q.setAnswer(response);
 
-		q.setAnswer(response);
+			runOnUiThread(new Runnable() {
 
-		runOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				adapter.notifyDataSetChanged();
-			}
-		});
+				@Override
+				public void run() {
+					adapter.notifyDataSetChanged();
+				}
+			});
+		}
 	}
 
 	@Override

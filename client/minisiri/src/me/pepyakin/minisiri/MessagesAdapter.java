@@ -16,7 +16,7 @@ import me.pepyakin.minisiri.model.Question;
 
 /**
  * @author knott
- *
+ * 
  */
 public class MessagesAdapter extends BaseAdapter {
 
@@ -25,7 +25,7 @@ public class MessagesAdapter extends BaseAdapter {
 
 	public MessagesAdapter(LayoutInflater inflater) {
 		this.inflater = inflater;
-		
+
 		questions = new ArrayList<Question>();
 	}
 
@@ -47,52 +47,72 @@ public class MessagesAdapter extends BaseAdapter {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-		 // TODO: сделать ок.
-		View v = inflater.inflate(android.R.layout.simple_list_item_2, parent, false);
-		
+		View view;
+		ViewHolder holder;
+
+		if (convertView == null) {
+			view = inflater.inflate(android.R.layout.simple_list_item_2,
+					parent, false);
+
+			holder = new ViewHolder();
+			holder.text1 = (TextView) view.findViewById(android.R.id.text1);
+			holder.text2 = (TextView) view.findViewById(android.R.id.text2);
+
+			view.setTag(holder);
+		} else {
+			view = convertView;
+			holder = (ViewHolder) view.getTag();
+		}
+
 		Question q = getItem(position);
-		
-		TextView text1 = (TextView) v.findViewById(android.R.id.text1);
-		TextView text2 = (TextView) v.findViewById(android.R.id.text2);
-		
-		text1.setText(q.getQuestion());
-		
+
+		String firstLine = q.getQuestion();
+		String secondLine = getSecondLine(q);
+
+		holder.text1.setText(firstLine);
+		holder.text2.setText(secondLine);
+
+		return view;
+	}
+
+	private String getSecondLine(Question q) {
 		if (!q.isPending()) {
 			String fullAnswer = q.getAnswer();
 			String answer = stripAnswer(fullAnswer);
-			
-			text2.setText(answer);
+
+			return answer;
+		} else {
+			return "...";
 		}
-		
-		return v;
 	}
 
 	private String stripAnswer(String fullAnswer) {
 		final int MAX_CHARS = 40;
-		
-		String answer;
-		
+
 		if (fullAnswer.length() > MAX_CHARS) {
-			answer = fullAnswer.substring(0, MAX_CHARS - 3) + "...";
+			return fullAnswer.substring(0, MAX_CHARS - 3) + "...";
 		} else {
-			answer = fullAnswer;
+			return fullAnswer;
 		}
-		
-		return answer;
 	}
-	
+
 	public void addQuestion(Question q) {
 		questions.add(q);
 		notifyDataSetChanged();
 	}
-	
+
 	public Question byId(int id) {
 		for (Question q : questions) {
 			if (q.getId() == id) {
 				return q;
 			}
 		}
-		
+
 		return null;
+	}
+
+	private class ViewHolder {
+		public TextView text1;
+		public TextView text2;
 	}
 }
