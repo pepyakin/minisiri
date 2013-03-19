@@ -11,14 +11,10 @@ class ConnectivityListener extends BroadcastReceiver {
 	private static final String ACTION_CONNECTIVITY = ConnectivityManager.CONNECTIVITY_ACTION;
 
 	private boolean lastNetworkAvailable;
+	private OnNetworkStateListener onNetworkStateChangeListener;
 
-	private OnNetworkStateChangeListener onNetworkStateChangeListener;
-	
-	
-
-	public void setOnNetworkStateChangeListener(
-			OnNetworkStateChangeListener onNetworkStateChangeListener) {
-		this.onNetworkStateChangeListener = onNetworkStateChangeListener;
+	public void setOnNetworkStateChangeListener(OnNetworkStateListener listener) {
+		this.onNetworkStateChangeListener = listener;
 	}
 
 	@Override
@@ -28,7 +24,7 @@ class ConnectivityListener extends BroadcastReceiver {
 		}
 
 		ConnectivityManager connectivityManager = getConnectivityManager(context);
-		
+
 		boolean networkAvailable = isNetworkAvailable(connectivityManager);
 
 		if (networkAvailable != lastNetworkAvailable) {
@@ -42,8 +38,8 @@ class ConnectivityListener extends BroadcastReceiver {
 	}
 
 	private ConnectivityManager getConnectivityManager(Context context) {
-		return (ConnectivityManager) 
-				context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		return (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
 	}
 
 	private boolean isIntrestedIn(Intent intent) {
@@ -58,7 +54,7 @@ class ConnectivityListener extends BroadcastReceiver {
 		return networkAvailable;
 	}
 
-	public interface OnNetworkStateChangeListener {
+	public interface OnNetworkStateListener {
 
 		/**
 		 * Вызывается когда сеть привалилась или отвалилась.

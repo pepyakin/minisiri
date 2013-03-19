@@ -4,7 +4,7 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import me.pepyakin.minisiri.ConnectivityListener.OnNetworkStateChangeListener;
+import me.pepyakin.minisiri.ConnectivityListener.OnNetworkStateListener;
 import me.pepyakin.minisiri.model.Question;
 import me.pepyakin.minisiri.remote.SiriService;
 import me.pepyakin.minisiri.remote.SiriService.SiriServiceCallbacks;
@@ -21,7 +21,7 @@ import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
 
 public class MainActivity extends Activity implements
-		OnNetworkStateChangeListener, SiriServiceCallbacks, OnClickListener {
+		OnNetworkStateListener, SiriServiceCallbacks, OnClickListener {
 
 	private EditText questionText;
 	private ListView messageList;
