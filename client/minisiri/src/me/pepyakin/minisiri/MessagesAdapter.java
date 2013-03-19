@@ -59,19 +59,26 @@ public class MessagesAdapter extends BaseAdapter {
 		
 		if (!q.isPending()) {
 			String fullAnswer = q.getAnswer();
-			String answer;
-			
-			if (fullAnswer.length() > 40) {
-				answer = fullAnswer.substring(0, 40);
-			} else {
-				answer = fullAnswer;
-			}
-			
+			String answer = stripAnswer(fullAnswer);
 			
 			text2.setText(answer);
 		}
 		
 		return v;
+	}
+
+	private String stripAnswer(String fullAnswer) {
+		final int MAX_CHARS = 40;
+		
+		String answer;
+		
+		if (fullAnswer.length() > MAX_CHARS) {
+			answer = fullAnswer.substring(0, MAX_CHARS - 3) + "...";
+		} else {
+			answer = fullAnswer;
+		}
+		
+		return answer;
 	}
 	
 	public void addQuestion(Question q) {
