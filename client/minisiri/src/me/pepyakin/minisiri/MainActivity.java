@@ -119,7 +119,7 @@ public class MainActivity extends Activity implements OnNetworkStateListener,
 	@Override
 	public void onNetworkStateChange(boolean networkAvailableNow) {
 		if (networkAvailableNow) {
-			Crouton.showText(this, "Соединение восстановлено", Style.INFO);
+			Crouton.showText(this, "Подключение", Style.INFO);
 			service.connect();
 		} else {
 			Crouton.showText(this, "Соединение потеряно", Style.ALERT);
