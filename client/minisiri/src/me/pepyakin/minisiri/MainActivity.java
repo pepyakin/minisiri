@@ -102,10 +102,18 @@ public class MainActivity extends Activity implements OnNetworkStateListener,
 
 	private void onSendButtonClicked() {
 		String questionString = questionText.getText().toString();
+		if (questionString.length() == 0) {
+			Crouton.showText(this, "Введите вопрос!", Style.ALERT);
+			return;
+		}
+		
 		int id = service.enqueQuestion(questionString);
 
 		Question question = new Question(id, questionString);
 		adapter.addQuestion(question);
+		
+		// Очистить текстовое поле.
+		questionText.setText("");
 	}
 
 	@Override
