@@ -20,17 +20,17 @@ import android.widget.ListView;
 import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
 
-public class MainActivity extends Activity implements
-		OnNetworkStateListener, SiriServiceCallbacks, OnClickListener {
+public class MainActivity extends Activity implements OnNetworkStateListener,
+		SiriServiceCallbacks, OnClickListener {
 
 	private EditText questionText;
 	private ListView messageList;
-
-	private SiriService service;
-
 	private MessagesAdapter adapter;
-
+	
+	private Style infinityStyle;
+	private SiriService service;
 	private ConnectivityListener connectivityListener;
+	
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +40,17 @@ public class MainActivity extends Activity implements
 		resolveUi();
 		serviceConnect();
 		setupConnectivityListener();
+		buildInfiniteStyle();
+	}
+
+	private void buildInfiniteStyle() {
+		int pressable = getResources().getDimensionPixelSize(
+				R.dimen.pressable_48dp);
+
+		infinityStyle = new Style.Builder()
+				.setBackgroundColorValue(Style.holoRedLight)
+				.setHeight(pressable).setDuration(Style.DURATION_INFINITE)
+				.build();
 	}
 
 	private void setupConnectivityListener() {
@@ -119,7 +130,7 @@ public class MainActivity extends Activity implements
 	@Override
 	public void onResultReceived(int id, String answer) {
 		Question question = adapter.byId(id);
-		
+
 		if (question != null) {
 			question.setAnswer(answer);
 
@@ -150,11 +161,13 @@ public class MainActivity extends Activity implements
 	}
 
 	private void onConnectFailed() {
-		Crouton crouton = Crouton.makeText(this, "Ошибка подключения. Попробовать снова?", Style.ALERT);
+		final Crouton crouton = Crouton.makeText(this,
+				"Ошибка подключения. Попробовать снова?", infinityStyle);
 		crouton.setOnClickListener(new OnClickListener() {
-			
+
 			@Override
 			public void onClick(View v) {
+				Crouton.hide(crouton);
 				service.connect();
 			}
 		});

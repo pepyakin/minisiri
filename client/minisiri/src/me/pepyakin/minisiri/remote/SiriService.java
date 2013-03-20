@@ -19,6 +19,11 @@ import com.codebutler.android_websockets.WebSocketClient;
  */
 public class SiriService {
 
+	private static final int STATE_INITIAL = 0;
+	private static final int STATE_CONNECTING = 1;
+	private static final int STATE_CONNECTED = 2;
+	private static final int STATE_ERROR = 3;
+
 	private SparseArray<SiriRequest> pendingRequests;
 	private ArrayBlockingQueue<SiriRequest> requestQueue;
 
@@ -26,15 +31,14 @@ public class SiriService {
 	private ResponseDecoder decoder;
 
 	private WebSocketClient wsClient;
+	
 	private SiriServiceCallbacks callbacks;
 
 	private Thread pollerThread;
-
 	private URI serverUri;
-
 	private IdFactory idFactory;
 
-	private boolean inErrorState = false;
+	private int state = STATE_INITIAL;
 
 	public SiriService(URI serverUri) {
 		pendingRequests = new SparseArray<SiriRequest>();
@@ -44,17 +48,22 @@ public class SiriService {
 		decoder = new ResponseDecoder();
 
 		this.serverUri = serverUri;
-		
+
 		idFactory = new IdFactory();
 	}
 
 	public void connect() {
-		inErrorState = false;
-		requestQueue.clear();
+		reset();
+
+		state = STATE_CONNECTING;
 
 		wsClient = new WebSocketClient(serverUri, new Handler(), null);
 		wsClient.connect();
 
+		reEnqueue();
+	}
+
+	private void reEnqueue() {
 		for (int i = 0; i < pendingRequests.size(); i++) {
 			SiriRequest r = pendingRequests.valueAt(i);
 
@@ -66,13 +75,18 @@ public class SiriService {
 		}
 	}
 
+	private void reset() {
+		state = STATE_INITIAL;
+		requestQueue.clear();
+	}
+
 	public int enqueQuestion(String question) {
 		int id = idFactory.nextId();
 
 		SiriRequest request = new SiriRequest();
 		request.setId(id);
 		request.setQuestion(question);
-		
+
 		enqueRequest(request);
 
 		return id;
@@ -95,9 +109,8 @@ public class SiriService {
 	}
 
 	private void send(SiriRequest request) {
-		String encodedRequest = encoder.encode(request);
-
-		if (!inErrorState) {
+		if (state == STATE_CONNECTED) {
+			String encodedRequest = encoder.encode(request);
 			wsClient.send(encodedRequest);
 		}
 	}
@@ -113,7 +126,7 @@ public class SiriService {
 	}
 
 	public void handleError(Exception exception) {
-		inErrorState = true;
+		state = STATE_ERROR;
 
 		if (callbacks != null) {
 			callbacks.onError(exception);
@@ -160,6 +173,10 @@ public class SiriService {
 
 	}
 
+	public boolean isConnected() {
+		return state == STATE_CONNECTED;
+	}
+
 	/**
 	 * Класс который реагирует на события посланные {@link WebSocketClient
 	 * WebSocket клиентом}, делегируя родительскому {@link SiriService}.
@@ -173,6 +190,8 @@ public class SiriService {
 		@Override
 		public void onConnect() {
 			Log.d(TAG, "Connected!");
+
+			state = STATE_CONNECTED;
 
 			pollerThread = new Thread(new Poller());
 			pollerThread.start();
